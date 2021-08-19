@@ -20,6 +20,8 @@ import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.util.Assertions;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Base class for {@link Decoder}s that use their own decode thread and decode each input buffer
@@ -206,6 +208,7 @@ public abstract class SimpleDecoder<
     }
   }
 
+  private List<I> inputBufferList = new ArrayList<>();
   private boolean decode() throws InterruptedException {
     I inputBuffer;
     O outputBuffer;
@@ -225,9 +228,24 @@ public abstract class SimpleDecoder<
       flushed = false;
     }
 
+    inputBuffer.addFlag(C.BUFFER_FLAG_DECODE_ONLY);
+
     if (inputBuffer.isEndOfStream()) {
       outputBuffer.addFlag(C.BUFFER_FLAG_END_OF_STREAM);
+      long averageTime = 0;
+      for (I buffer : inputBufferList) {
+        try {
+          long startTime = System.nanoTime();
+          decode(buffer, outputBuffer, false);
+          long endTime = System.nanoTime();
+          averageTime += endTime - startTime;
+        } catch (Exception e) {
+
+        }
+      }
+      System.out.println("PROFILE: numFrames: " + inputBufferList.size() + "Average decode time: " + (averageTime) / (inputBufferList.size()) + "ns");
     } else {
+      inputBufferList.add(inputBuffer);
       if (inputBuffer.isDecodeOnly()) {
         outputBuffer.addFlag(C.BUFFER_FLAG_DECODE_ONLY);
       }

@@ -166,6 +166,7 @@ public final class OpusDecoder
       // any other time, skip number of samples as specified by seek preroll.
       skipSamples = (inputBuffer.timeUs == 0) ? preSkipSamples : seekPreRollSamples;
     }
+    System.out.println("PROFILE: Decode request at: " + System.currentTimeMillis());
     ByteBuffer inputData = Util.castNonNull(inputBuffer.data);
     CryptoInfo cryptoInfo = inputBuffer.cryptoInfo;
     int result =

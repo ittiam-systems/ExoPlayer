@@ -256,12 +256,12 @@ public abstract class DecoderAudioRenderer<
   @Override
   public void render(long positionUs, long elapsedRealtimeUs) throws ExoPlaybackException {
     if (outputStreamEnded) {
-      try {
-        audioSink.playToEndOfStream();
-      } catch (AudioSink.WriteException e) {
-        throw createRendererException(
-            e, e.format, e.isRecoverable, PlaybackException.ERROR_CODE_AUDIO_TRACK_WRITE_FAILED);
-      }
+//      try {
+//        audioSink.playToEndOfStream();
+//      } catch (AudioSink.WriteException e) {
+//        throw createRendererException(
+//            e, e.format, e.isRecoverable, PlaybackException.ERROR_CODE_AUDIO_TRACK_WRITE_FAILED);
+//      }
       return;
     }
 
@@ -297,8 +297,10 @@ public abstract class DecoderAudioRenderer<
       try {
         // Rendering loop.
         TraceUtil.beginSection("drainAndFeed");
+        System.out.println("PROFILE: drainAndFeed start: " + System.currentTimeMillis());
         while (drainOutputBuffer()) {}
         while (feedInputBuffer()) {}
+        System.out.println("PROFILE: drainAndFeed end: " + System.currentTimeMillis());
         TraceUtil.endSection();
       } catch (DecoderException e) {
         // Can happen with dequeueOutputBuffer, dequeueInputBuffer, queueInputBuffer
@@ -372,7 +374,7 @@ public abstract class DecoderAudioRenderer<
       }
       if (outputBuffer.skippedOutputBufferCount > 0) {
         decoderCounters.skippedOutputBufferCount += outputBuffer.skippedOutputBufferCount;
-        audioSink.handleDiscontinuity();
+//        audioSink.handleDiscontinuity();
       }
     }
 
@@ -407,8 +409,8 @@ public abstract class DecoderAudioRenderer<
       audioTrackNeedsConfigure = false;
     }
 
-    if (audioSink.handleBuffer(
-        outputBuffer.data, outputBuffer.timeUs, /* encodedAccessUnitCount= */ 1)) {
+    if (true/*audioSink.handleBuffer(
+        outputBuffer.data, outputBuffer.timeUs, *//* encodedAccessUnitCount= *//* 1)*/) {
       decoderCounters.renderedOutputBufferCount++;
       outputBuffer.release();
       outputBuffer = null;
@@ -469,7 +471,7 @@ public abstract class DecoderAudioRenderer<
 
   private void processEndOfStream() throws AudioSink.WriteException {
     outputStreamEnded = true;
-    audioSink.playToEndOfStream();
+//    audioSink.playToEndOfStream();
   }
 
   private void flushDecoder() throws ExoPlaybackException {
@@ -548,13 +550,13 @@ public abstract class DecoderAudioRenderer<
 
   @Override
   protected void onStarted() {
-    audioSink.play();
+//    audioSink.play();
   }
 
   @Override
   protected void onStopped() {
     updateCurrentPosition();
-    audioSink.pause();
+//    audioSink.pause();
   }
 
   @Override

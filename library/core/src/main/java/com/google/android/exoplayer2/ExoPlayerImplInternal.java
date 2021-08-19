@@ -152,8 +152,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
   private static final int MSG_SET_OFFLOAD_SCHEDULING_ENABLED = 24;
   private static final int MSG_ATTEMPT_RENDERER_ERROR_RECOVERY = 25;
 
-  private static final int ACTIVE_INTERVAL_MS = 10;
-  private static final int IDLE_INTERVAL_MS = 1000;
+  private static final int ACTIVE_INTERVAL_MS = 0;
+  private static final int IDLE_INTERVAL_MS = 0;
   /**
    * Duration under which pausing the main DO_SOME_WORK loop is not expected to yield significant
    * power saving.
@@ -1059,9 +1059,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
     } else {
       handler.removeMessages(MSG_DO_SOME_WORK);
     }
-    if (playbackInfo.sleepingForOffload != sleepingForOffload) {
-      playbackInfo = playbackInfo.copyWithSleepingForOffload(sleepingForOffload);
-    }
+//    if (playbackInfo.sleepingForOffload != sleepingForOffload) {
+//      playbackInfo = playbackInfo.copyWithSleepingForOffload(sleepingForOffload);
+//    }
     requestForRendererSleep = false; // A sleep request is only valid for the current doSomeWork.
 
     TraceUtil.endSection();
