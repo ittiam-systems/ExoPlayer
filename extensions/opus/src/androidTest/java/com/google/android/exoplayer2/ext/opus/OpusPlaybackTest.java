@@ -29,10 +29,14 @@ import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.Renderer;
 import com.google.android.exoplayer2.RenderersFactory;
 import com.google.android.exoplayer2.SimpleExoPlayer;
+import com.google.android.exoplayer2.audio.MediaCodecAudioRenderer;
+import com.google.android.exoplayer2.mediacodec.MediaCodecInfo;
+import com.google.android.exoplayer2.mediacodec.MediaCodecSelector;
 import com.google.android.exoplayer2.extractor.mkv.MatroskaExtractor;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
+import java.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -78,6 +82,22 @@ public class OpusPlaybackTest {
     private final Context context;
     private final Uri uri;
 
+    private MediaCodecAudioRenderer mediaCodecAudioRenderer;
+
+    private MediaCodecSelector mediaCodecSelector =
+        (mimeType, requiresSecureDecoder, requiresTunnelingDecoder) ->
+            Collections.singletonList(
+                MediaCodecInfo.newInstance(
+                    /* name= */ "c2.android.opus.decoder",
+                    /* mimeType= */ mimeType,
+                    /* codecMimeType= */ mimeType,
+                    /* capabilities= */ null,
+                    /* hardwareAccelerated= */ false,
+                    /* softwareOnly= */ true,
+                    /* vendor= */ false,
+                    /* forceDisableAdaptive= */ false,
+                    /* forceSecure= */ false));
+
     @Nullable private SimpleExoPlayer player;
     @Nullable private PlaybackException playbackException;
 
@@ -95,7 +115,10 @@ public class OpusPlaybackTest {
               audioRendererEventListener,
               textRendererOutput,
               metadataRendererOutput) ->
-              new Renderer[] {new LibopusAudioRenderer(eventHandler, audioRendererEventListener)};
+              new Renderer[] {
+                  new MediaCodecAudioRenderer(context,
+                      mediaCodecSelector, eventHandler, audioRendererEventListener )};
+
       player = new SimpleExoPlayer.Builder(context, renderersFactory).build();
       player.addListener(this);
       MediaSource mediaSource =
