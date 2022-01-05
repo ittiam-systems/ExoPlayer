@@ -3,8 +3,20 @@
     "name": "Clear DASH",
     "samples": [
       {
-        "name": "HD (MP4, H264)",
-        "uri": "https://storage.googleapis.com/wvmedia/clear/h264/tears/tears.mpd"
+        "name": "Rtsp",
+        "uri": "rtsp://172.25.114.210:8554/freh4.264"
+      },
+      {
+        "name": "Local",
+        "uri": "file:///sdcard/scaled_96x96.mp4"
+      },
+      {
+        "name": "Rtsp HEVC 96x96",
+        "uri": "rtsp://172.25.114.210:8554/scaled_96x96.265"
+      },
+      {
+        "name": "Rtsp HEVC 176x144",
+        "uri": "rtsp://172.25.114.210:8554/scaled_176x144.265"
       },
       {
         "name": "UHD (MP4, H264)",

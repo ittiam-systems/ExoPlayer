@@ -42,10 +42,14 @@ import com.google.common.collect.ImmutableMap;
   // Format specific parameter names.
   private static final String PARAMETER_PROFILE_LEVEL_ID = "profile-level-id";
   private static final String PARAMETER_SPROP_PARAMS = "sprop-parameter-sets";
+  private static final String H265_SPS = "sprop-sps";
+  private static final String H265_PPS = "sprop-pps";
   /** Prefix for the RFC6381 codecs string for AAC formats. */
   private static final String AAC_CODECS_PREFIX = "mp4a.40.";
   /** Prefix for the RFC6381 codecs string for AVC formats. */
   private static final String H264_CODECS_PREFIX = "avc1.";
+  /** Prefix for the RFC7798 codecs string for HEVC formats. */
+  private static final String H265_CODECS_PREFIX = "hvc1.";
 
   private static final String GENERIC_CONTROL_ATTR = "*";
 
@@ -117,6 +121,10 @@ import com.google.common.collect.ImmutableMap;
       case MimeTypes.VIDEO_H264:
         checkArgument(!fmtpParameters.isEmpty());
         processH264FmtpAttribute(formatBuilder, fmtpParameters);
+        break;
+      case MimeTypes.VIDEO_H265:
+        checkArgument(!fmtpParameters.isEmpty());
+        processH265FmtpAttribute(formatBuilder, fmtpParameters);
         break;
       case MimeTypes.AUDIO_AC3:
         // AC3 does not require a FMTP attribute. Fall through.
@@ -192,6 +200,64 @@ import com.google.common.collect.ImmutableMap;
   }
 
   private static byte[] getH264InitializationDataFromParameterSet(String parameterSet) {
+    byte[] decodedParameterNalData = Base64.decode(parameterSet, Base64.DEFAULT);
+    byte[] decodedParameterNalUnit =
+        new byte[decodedParameterNalData.length + NAL_START_CODE.length];
+    System.arraycopy(
+        NAL_START_CODE,
+        /* srcPos= */ 0,
+        decodedParameterNalUnit,
+        /* destPos= */ 0,
+        NAL_START_CODE.length);
+    System.arraycopy(
+        decodedParameterNalData,
+        /* srcPos= */ 0,
+        decodedParameterNalUnit,
+        /* destPos= */ NAL_START_CODE.length,
+        decodedParameterNalData.length);
+    return decodedParameterNalUnit;
+  }
+
+  private static void processH265FmtpAttribute(
+      Format.Builder formatBuilder, ImmutableMap<String, String> fmtpAttributes) {
+    checkArgument(fmtpAttributes.containsKey(H265_SPS));
+    String spropParameterSets = checkNotNull(fmtpAttributes.get(H265_SPS));
+    // TODO: Remove
+    String[] parameterSets = Util.split(spropParameterSets, ",");
+    // TODO: VPS and PPS required?
+    checkArgument(parameterSets.length == 1);
+    ImmutableList<byte[]> initializationData =
+        ImmutableList.of(
+            getH265InitializationDataFromParameterSet(parameterSets[0]));
+    formatBuilder.setInitializationData(initializationData);
+
+    // Process SPS (Sequence Parameter Set).
+    byte[] spsNalDataWithStartCode = initializationData.get(0);
+    NalUnitUtil.H265SpsData spsData =
+        NalUnitUtil.parseH265SpsNalUnit(
+            spsNalDataWithStartCode, NAL_START_CODE.length, spsNalDataWithStartCode.length);
+    formatBuilder.setPixelWidthHeightRatio(spsData.pixelWidthHeightRatio);
+    formatBuilder.setHeight(spsData.height);
+    formatBuilder.setWidth(spsData.width);
+
+    // TODO: profile and level id separate
+    @Nullable String profileLevel = fmtpAttributes
+        .get(PARAMETER_PROFILE_LEVEL_ID);
+    if (profileLevel != null) {
+      formatBuilder.setCodecs(H265_CODECS_PREFIX + profileLevel);
+    } else {
+      formatBuilder.setCodecs(
+          CodecSpecificDataUtil.buildHevcCodecString(
+              spsData.generalProfileSpace,
+              spsData.generalTierFlag,
+              spsData.generalProfileIdc,
+              spsData.generalProfileCompatibilityFlags,
+              spsData.constraintBytes,
+              spsData.generalLevelIdc));
+    }
+  }
+
+  private static byte[] getH265InitializationDataFromParameterSet(String parameterSet) {
     byte[] decodedParameterNalData = Base64.decode(parameterSet, Base64.DEFAULT);
     byte[] decodedParameterNalUnit =
         new byte[decodedParameterNalData.length + NAL_START_CODE.length];
